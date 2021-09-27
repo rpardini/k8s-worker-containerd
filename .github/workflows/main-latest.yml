@@ -1,0 +1,138 @@
+name: main-latest
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare release ID
+        id: prep
+        run: |
+          echo ::set-output name=created::$(date -u +'%Y%m%d-%H%M')
+    outputs:
+      created: ${{ steps.prep.outputs.created }} # refer to as ${{needs.prepare.outputs.created}}
+
+
+  build:
+    needs: [ prepare ]
+    runs-on: ubuntu-latest # soon to support hosted runners for arm64
+    strategy:
+      fail-fast: false # let other jobs try to complete if one fails
+      matrix:
+        arch: [ 'amd64' , 'arm64' ]
+        distro: [ 'ubuntu:impish', 'ubuntu:hirsute', 'golang:1.16-bullseye', 'debian:sid' ]
+        # FIXME: if you know of an updated multiarch Ubuntu Focal image with 1.16 golang please PR
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers ${{ matrix.arch }} ${{ matrix.distro }}
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ matrix.arch }}-${{ matrix.distro }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.arch }}-${{ matrix.distro }}
+
+      - name: Build ${{ matrix.arch }} ${{ matrix.distro }}
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          load: true
+          pull: true # bring in updated versions of preexisting GH images
+          push: false
+          tags: k8s-worker-containerd:${{ matrix.arch }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          build-args: |
+            PACKAGE_VERSION=${{needs.prepare.outputs.created}}
+            BASE_IMAGE=${{ matrix.distro }}
+            OS_ARCH=${{ matrix.arch }}
+
+      - name: Extract artifacts from docker ${{ matrix.arch }} ${{ matrix.distro }}
+        run: docker cp $(docker create --rm k8s-worker-containerd:${{ matrix.arch }}):/out ./
+
+      - name: Upload deb as artifact ${{ matrix.arch }} ${{ matrix.distro }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: deb
+          path: out/*.deb
+
+      - name: Upload tarball as artifact ${{ matrix.arch }} ${{ matrix.distro }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: tarball
+          path: out/*.tar.gz
+
+      # Temp fix: https://github.com/docker/build-push-action/issues/252
+      - name: Move caches ${{ matrix.arch }} ${{ matrix.distro }}
+        run: |
+          echo "Old ${{ matrix.arch }} ${{ matrix.distro }} cache..."
+          ls -lahtR /tmp/.buildx-cache || true
+          if [[ -d /tmp/.buildx-cache-new ]]; then
+            echo "New  ${{ matrix.arch }} ${{ matrix.distro }} cache..."
+            ls -lahtR /tmp/.buildx-cache-new
+            echo "Flipping  ${{ matrix.arch }} ${{ matrix.distro }} cache..."
+            rm -rf /tmp/.buildx-cache
+            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          fi
+
+  release:
+    needs: [ prepare, build ] # depend on the previous jobs...
+    if: "${{ always() }}" # ... but run even if (some of) them failed.
+    runs-on: ubuntu-latest
+    steps:
+      # Download the built artifacts from GH artifacts.  
+      - uses: actions/download-artifact@v2
+        name: Download deb artifacts
+        with:
+          name: deb
+          path: out
+
+      - uses: actions/download-artifact@v2
+        name: Download tarball artifacts
+        with:
+          name: tarball
+          path: out
+
+      - name: List artifacts downloaded
+        run: |
+          ls -lahtR
+
+      # Release the artifacts into GitHub Releases
+      - name: "GH specific release"
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "${{needs.prepare.outputs.created}}"
+          prerelease: false
+          title: "${{needs.prepare.outputs.created}}"
+          files: |
+            out/*.deb
+            out/*.tar.gz
+
+      #- name: "GH latest release"
+      #  uses: "marvinpinto/action-automatic-releases@latest"
+      #  with:
+      #    repo_token: "${{ secrets.GITHUB_TOKEN }}"
+      #    automatic_release_tag: "latest"
+      #    prerelease: false
+      #    title: "Latest: ${{needs.prepare.outputs.created}}"
+      #    files: |
+      #      out/*.deb
+      #      out/*.tar.gz
+
