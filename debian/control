@@ -7,11 +7,11 @@ Standards-Version: 3.9.6
 Homepage: https://containerd.io/
 
 Package: k8s-worker-containerd
-Provides: containerd, runc
-Conflicts: containerd, runc
-Description: containerd/run/cri-tools/cni-plugins for k8s
- containerd/run/cri-tools/cni-plugins
- Mostly built from source. Full static binaries.
+Provides: containerd, runc, podman, conman, golang-github-containers-image, golang-github-containers-common, cri-tools
+Conflicts: containerd, runc, podman, conman, golang-github-containers-image, golang-github-containers-common, cri-tools
+Description: containerd/run/cri-tools/podman/conman for k8s
+ containerd/run/cri-tools/podman/conman
+ Built from source. Docker-free stuff.
 Section: admin
 Pre-Depends: bash (>= 4.0)
 Depends: ${misc:Depends}, ${shlibs:Depends}

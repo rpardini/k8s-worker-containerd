@@ -52,13 +52,20 @@ RUN git clone --depth=1 --single-branch --branch=${CRI_TOOLS_VERSION} https://gi
 WORKDIR /src/cri-tools
 RUN make
 
-# Prepare the results in /out
-WORKDIR /out/usr/bin
+# Prepare the results in /out,
+WORKDIR /out/usr/sbin
 RUN cp -v /src/runc/runc .
-RUN cp -v /src/cri-tools/build/bin/* .
+WORKDIR /out/usr/bin
+RUN cp -v /src/cri-tools/build/bin/crictl crictl-latest # avoid conflict with kubeadm-required cri-tools which contrains an old crictl
+RUN cp -v /src/cri-tools/build/bin/critest .
 RUN cp -v /src/containerd/bin/* .
 RUN cp -v /src/podman/bin/podman .
 RUN cp -v /src/conmon/bin/conmon .
+
+# add podman default configs
+WORKDIR /out/etc/containers
+RUN curl -L -o /out/etc/containers/registries.conf https://src.fedoraproject.org/rpms/containers-common/raw/main/f/registries.conf
+RUN curl -L -o /out/etc/containers/policy.json https://src.fedoraproject.org/rpms/containers-common/raw/main/f/default-policy.json
 
 # Prepare debian binary package
 WORKDIR /pkg/src
@@ -89,7 +96,7 @@ RUN debuild --no-lintian --build=binary -us -uc
 RUN dpkg -i /pkg/*.deb
 RUN runc --version
 RUN containerd --version
-RUN crictl --version
+RUN crictl-latest --version
 RUN podman --version
 RUN conmon --version
 RUN dpkg -L k8s-worker-containerd
