@@ -1,35 +1,44 @@
 FROM ubuntu:hirsute as build
 
-ARG CNI_PLUGINS_VERSION="v0.9.1"
-ARG RUNC_VERSION="v1.0.2"
-ARG CONTAINERD_VERSION="v1.5.5"
-ARG CRI_TOOLS_VERSION="v1.22.0"
-ARG PACKAGE_VERSION="20210928"
 ARG OS_ARCH="amd64"
-# or arm64
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update
-RUN apt-get -y install golang-go git wget build-essential devscripts debhelper libseccomp-dev
+RUN apt-get -y install golang-go git wget curl build-essential devscripts debhelper libseccomp-dev
+RUN apt-get -y install libapparmor-dev libassuan-dev libbtrfs-dev libc6-dev libdevmapper-dev libglib2.0-dev libgpgme-dev libgpg-error-dev libprotobuf-dev libprotobuf-c-dev libseccomp-dev libselinux1-dev libsystemd-dev pkg-config
+
+
+SHELL ["/usr/bin/bash", "-e", "-c"]
 
 # See https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/79a3f79b27bd28f82f071bb877a266c2e62ee506/docs/09-bootstrapping-kubernetes-workers.md#download-and-install-worker-binaries
-
-# Download pre built cni plugins from github releases, they've arm64 and all.
-# @TODO maybe the kubelet packages from google .debs actually carry this already?
-WORKDIR /src/cni_plugins
-SHELL ["/usr/bin/bash", "-e", "-c"]
-RUN wget --progress=dot:giga -O "/tmp/cni-plugins-linux.tgz" "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-${OS_ARCH}-${CNI_PLUGINS_VERSION}.tgz"
-RUN tar -xzf /tmp/cni-plugins-linux.tgz
 
 
 # Build runc from source
 WORKDIR /src
+ARG RUNC_VERSION="v1.0.2"
 RUN git clone --single-branch --branch=${RUNC_VERSION} https://github.com/opencontainers/runc /src/runc
 WORKDIR /src/runc
 RUN make
 
+# Build conmon from source
+WORKDIR /src
+ARG CONMON_VERSION="v2.0.30"
+RUN git clone --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
+WORKDIR /src/conmon
+RUN make
+
+
+# Build podman from source.
+WORKDIR /src
+ARG PODMAN_VERSION="v3.3.1"
+RUN git clone --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
+WORKDIR /src/podman
+RUN make BUILDTAGS="selinux seccomp systemd"
+
+
 # Build containerd from source
 WORKDIR /src
+ARG CONTAINERD_VERSION="v1.5.5"
 RUN git clone --depth=1 --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
 WORKDIR /src/containerd
 RUN BUILDTAGS=no_btrfs make
@@ -38,6 +47,7 @@ RUN BUILDTAGS=no_btrfs make
 
 # Build containerd from source
 WORKDIR /src
+ARG CRI_TOOLS_VERSION="v1.22.0"
 RUN git clone --depth=1 --single-branch --branch=${CRI_TOOLS_VERSION} https://github.com/kubernetes-sigs/cri-tools /src/cri-tools
 WORKDIR /src/cri-tools
 RUN make
@@ -47,9 +57,8 @@ WORKDIR /out/usr/bin
 RUN cp -v /src/runc/runc .
 RUN cp -v /src/cri-tools/build/bin/* .
 RUN cp -v /src/containerd/bin/* .
-WORKDIR /out/opt/cni/bin
-RUN cp -v /src/cni_plugins/* . # cni plugins
-
+RUN cp -v /src/podman/bin/podman .
+RUN cp -v /src/conmon/bin/conmon .
 
 # Prepare debian binary package
 WORKDIR /pkg/src
@@ -63,6 +72,7 @@ RUN echo "Architecture: ${OS_ARCH}" >> /pkg/src/debian/control
 RUN cat /pkg/src/debian/control
 
 # Create the Changelog, fake. The atrocities we do in dockerfiles.
+ARG PACKAGE_VERSION="20210928"
 RUN echo "k8s-worker-containerd (${PACKAGE_VERSION}) stable; urgency=medium" >> /pkg/src/debian/changelog
 RUN echo "" >> /pkg/src/debian/changelog
 RUN echo "  * Not a real changelog. Sorry." >> /pkg/src/debian/changelog
@@ -80,6 +90,8 @@ RUN dpkg -i /pkg/*.deb
 RUN runc --version
 RUN containerd --version
 RUN crictl --version
+RUN podman --version
+RUN conmon --version
 RUN dpkg -L k8s-worker-containerd
 
 # Now prepare the real output: a tarball of /out, and the .deb for this arch.
