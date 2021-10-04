@@ -38,7 +38,7 @@ RUN make BUILDTAGS="selinux seccomp systemd"
 
 # Build containerd from source
 WORKDIR /src
-ARG CONTAINERD_VERSION="v1.5.5"
+ARG CONTAINERD_VERSION="v1.5.7"
 RUN git clone --depth=1 --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
 WORKDIR /src/containerd
 RUN BUILDTAGS=no_btrfs make
