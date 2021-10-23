@@ -123,9 +123,9 @@ RUN dpkg -L k8s-worker-containerd
 
 # Now prepare the real output: a tarball of /out, and the .deb for this arch.
 WORKDIR /artifacts
-RUN cp -v /pkg/*.deb .
+RUN cp -v /pkg/*.deb k8s-worker-containerd_${OS_ARCH}.deb
 WORKDIR /out
-RUN tar czvf /artifacts/k8s-worker-containerd_${PACKAGE_VERSION}_${OS_ARCH}.tar.gz *
+RUN tar czvf /artifacts/k8s-worker-containerd_${OS_ARCH}.tar.gz *
 
 # Final stage is just alpine so we can start a fake container just to get at its contents using docker in GHA
 FROM alpine:3.14.2

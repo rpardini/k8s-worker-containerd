@@ -81,12 +81,24 @@ jobs:
         if: "${{ false }}" # disabled
         run: docker cp $(docker create --rm k8s-worker-containerd:arm64):/out ./
 
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: "GH latest release"
+        uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: false
-          title: "Latest release"
+          title: "Latest release: ${{ steps.prep.outputs.created }}"
+          files: |
+            out/*.deb
+            out/*.tar.gz
+
+      - name: "GH specific release"
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "${{ steps.prep.outputs.created }}"
+          prerelease: false
+          title: "Release: ${{ steps.prep.outputs.created }}"
           files: |
             out/*.deb
             out/*.tar.gz
