@@ -115,6 +115,10 @@ WORKDIR /pkg/src
 RUN debuild --no-lintian --build=binary -us -uc -Zxz -z1 
 RUN file /pkg/*.deb
 
+# Show package info
+RUN dpkg-deb -I /pkg/*.deb || true
+RUN dpkg-deb -f /pkg/*.deb || true
+
 # Install it to make sure it works
 RUN dpkg -i /pkg/*.deb
 RUN runc --version
