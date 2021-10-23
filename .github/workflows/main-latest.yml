@@ -107,19 +107,19 @@ jobs:
       - name: Move caches
         run: |
           echo "Old amd64 cache..."
-          ls -laht /tmp/.buildx-cache-amd64 || true
+          ls -lahtR /tmp/.buildx-cache-amd64 || true
           if [[ -d /tmp/.buildx-cache-amd64-new ]]; then
             echo "New amd64 cache..."
-            ls -laht /tmp/.buildx-cache-amd64-new
+            ls -lahtR /tmp/.buildx-cache-amd64-new
             echo "Flipping amd64 cache..."
             rm -rf /tmp/.buildx-cache-amd64
             mv /tmp/.buildx-cache-amd64-new /tmp/.buildx-cache-amd64
           fi
           echo "Old arm64 cache..."
-          ls -laht /tmp/.buildx-cache-arm64 || true
+          ls -lahtR /tmp/.buildx-cache-arm64 || true
           if [[ -d /tmp/.buildx-cache-arm64-new ]]; then
             echo "New arm64 cache..."
-            ls -laht /tmp/.buildx-cache-arm64-new
+            ls -lahtR /tmp/.buildx-cache-arm64-new
             echo "Flipping arm64 cache..."
             rm -rf /tmp/.buildx-cache-arm64
             mv /tmp/.buildx-cache-arm64-new /tmp/.buildx-cache-arm64
