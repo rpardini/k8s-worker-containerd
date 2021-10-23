@@ -1,4 +1,5 @@
 FROM ubuntu:hirsute as build
+# Note: after hirsute, dpkg defaults to zstd compression, which can't be read by Debian dpkg
 
 ARG OS_ARCH="amd64"
 
@@ -30,11 +31,10 @@ RUN make
 
 # Build podman from source.
 WORKDIR /src
-ARG PODMAN_VERSION="v3.3.1"
+ARG PODMAN_VERSION="v3.4.1"
 RUN git clone --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
 WORKDIR /src/podman
 RUN make BUILDTAGS="selinux seccomp systemd"
-
 
 # Build containerd from source
 WORKDIR /src
@@ -44,12 +44,24 @@ WORKDIR /src/containerd
 RUN BUILDTAGS=no_btrfs make
 
 # Build crictl from source cri-tools
-
-# Build containerd from source
 WORKDIR /src
 ARG CRI_TOOLS_VERSION="v1.22.0"
 RUN git clone --depth=1 --single-branch --branch=${CRI_TOOLS_VERSION} https://github.com/kubernetes-sigs/cri-tools /src/cri-tools
 WORKDIR /src/cri-tools
+RUN make
+
+# Build cfssl from source 
+WORKDIR /src
+ARG CFSSL_VERSION="v1.6.1"
+RUN git clone --depth=1 --single-branch --branch=${CFSSL_VERSION} https://github.com/cloudflare/cfssl /src/cfssl
+WORKDIR /src/cfssl
+RUN make
+
+# Build nerdctl from source 
+WORKDIR /src
+ARG NERDCTL_VERSION="v0.12.1"
+RUN git clone --depth=1 --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
+WORKDIR /src/nerdctl
 RUN make
 
 # Prepare the results in /out,
@@ -61,6 +73,9 @@ RUN cp -v /src/cri-tools/build/bin/critest .
 RUN cp -v /src/containerd/bin/* .
 RUN cp -v /src/podman/bin/podman .
 RUN cp -v /src/conmon/bin/conmon .
+RUN cp -v /src/cfssl/bin/cfssl .
+RUN cp -v /src/cfssl/bin/cfssljson .
+RUN cp -v /src/nerdctl/_output/nerdctl .
 
 # add podman default configs
 WORKDIR /out/etc/containers
@@ -88,9 +103,10 @@ RUN echo " -- Ricardo Pardini <ricardo@pardini.net>  Wed, 15 Sep 2021 14:18:33 +
 RUN cat /pkg/src/debian/changelog
 
 
-# Build the package, don't sign it, don't lint it
+# Build the package, don't sign it, don't lint it, compress fast with xz
 WORKDIR /pkg/src
-RUN debuild --no-lintian --build=binary -us -uc
+RUN debuild --no-lintian --build=binary -us -uc -Zxz -z1 
+RUN file /pkg/*.deb
 
 # Install it to make sure it works
 RUN dpkg -i /pkg/*.deb
@@ -99,6 +115,9 @@ RUN containerd --version
 RUN crictl-latest --version
 RUN podman --version
 RUN conmon --version
+RUN cfssl version
+RUN cfssljson --version
+RUN nerdctl --version
 RUN dpkg -L k8s-worker-containerd
 
 # Now prepare the real output: a tarball of /out, and the .deb for this arch.
