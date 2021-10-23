@@ -52,6 +52,7 @@ jobs:
         run: docker cp $(docker create --rm k8s-worker-containerd:amd64):/out ./
 
       - name: Cache Docker layers arm64
+        if: {{false}} # disabled
         uses: actions/cache@v2
         with:
           path: /tmp/.buildx-cache-arm64
@@ -60,6 +61,7 @@ jobs:
             ${{ runner.os }}-buildxarch-arm64-
 
       - name: Build arm64
+        if: {{false}} # disabled
         id: docker_build_arm64
         uses: docker/build-push-action@v2
         with:
@@ -76,6 +78,7 @@ jobs:
             OS_ARCH=arm64
 
       - name: Extract artifacts from arm64 docker build
+        if: {{false}} # disabled
         run: docker cp $(docker create --rm k8s-worker-containerd:arm64):/out ./
 
       - uses: "marvinpinto/action-automatic-releases@latest"
