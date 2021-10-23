@@ -13,8 +13,8 @@ SHELL ["/usr/bin/bash", "-e", "-c"]
 
 # See https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/79a3f79b27bd28f82f071bb877a266c2e62ee506/docs/09-bootstrapping-kubernetes-workers.md#download-and-install-worker-binaries
 
-
 # Build runc from source
+FROM build as runc
 WORKDIR /src
 ARG RUNC_VERSION="v1.0.2"
 RUN git clone --single-branch --branch=${RUNC_VERSION} https://github.com/opencontainers/runc /src/runc
@@ -22,14 +22,15 @@ WORKDIR /src/runc
 RUN make
 
 # Build conmon from source
+FROM build as conmon
 WORKDIR /src
 ARG CONMON_VERSION="v2.0.30"
 RUN git clone --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
 WORKDIR /src/conmon
 RUN make
 
-
 # Build podman from source.
+FROM build as podman
 WORKDIR /src
 ARG PODMAN_VERSION="v3.4.1"
 RUN git clone --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
@@ -37,13 +38,15 @@ WORKDIR /src/podman
 RUN make BUILDTAGS="selinux seccomp systemd"
 
 # Build containerd from source
+FROM build as containerd
 WORKDIR /src
 ARG CONTAINERD_VERSION="v1.5.7"
 RUN git clone --depth=1 --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
 WORKDIR /src/containerd
 RUN BUILDTAGS=no_btrfs make
 
-# Build crictl from source cri-tools
+# Build cri-tools from source
+FROM build as cri-tools
 WORKDIR /src
 ARG CRI_TOOLS_VERSION="v1.22.0"
 RUN git clone --depth=1 --single-branch --branch=${CRI_TOOLS_VERSION} https://github.com/kubernetes-sigs/cri-tools /src/cri-tools
@@ -51,6 +54,7 @@ WORKDIR /src/cri-tools
 RUN make
 
 # Build cfssl from source 
+FROM build as cfssl
 WORKDIR /src
 ARG CFSSL_VERSION="v1.6.1"
 RUN git clone --depth=1 --single-branch --branch=${CFSSL_VERSION} https://github.com/cloudflare/cfssl /src/cfssl
@@ -58,24 +62,27 @@ WORKDIR /src/cfssl
 RUN make
 
 # Build nerdctl from source 
+FROM build as nerdctl
 WORKDIR /src
 ARG NERDCTL_VERSION="v0.12.1"
 RUN git clone --depth=1 --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
 WORKDIR /src/nerdctl
 RUN make
 
-# Prepare the results in /out,
+# Prepare the results in /out
+FROM build as packager
 WORKDIR /out/usr/sbin
-RUN cp -v /src/runc/runc .
+COPY --from=runc /src/runc/runc .
+
 WORKDIR /out/usr/bin
-RUN cp -v /src/cri-tools/build/bin/crictl crictl-latest # avoid conflict with kubeadm-required cri-tools which contrains an old crictl
-RUN cp -v /src/cri-tools/build/bin/critest .
-RUN cp -v /src/containerd/bin/* .
-RUN cp -v /src/podman/bin/podman .
-RUN cp -v /src/conmon/bin/conmon .
-RUN cp -v /src/cfssl/bin/cfssl .
-RUN cp -v /src/cfssl/bin/cfssljson .
-RUN cp -v /src/nerdctl/_output/nerdctl .
+COPY --from=cri-tools /src/cri-tools/build/bin/crictl crictl-latest
+COPY --from=cri-tools /src/cri-tools/build/bin/critest .
+COPY --from=containerd /src/containerd/bin/* .
+COPY --from=podman /src/podman/bin/podman .
+COPY --from=conmon /src/conmon/bin/conmon .
+COPY --from=cfssl /src/cfssl/bin/cfssl .
+COPY --from=cfssl /src/cfssl/bin/cfssljson .
+COPY --from=nerdctl /src/nerdctl/_output/nerdctl .
 
 # add podman default configs
 WORKDIR /out/etc/containers
@@ -129,5 +136,5 @@ RUN tar czvf /artifacts/k8s-worker-containerd_${OS_ARCH}.tar.gz *
 
 # Final stage is just alpine so we can start a fake container just to get at its contents using docker in GHA
 FROM alpine:3.14.2
-COPY --from=build /artifacts/* /out/
+COPY --from=packager /artifacts/* /out/
 
