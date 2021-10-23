@@ -3,8 +3,9 @@ set -e
 
 #DEBHELPER#
 
-echo "Overwriting old cri-tools binaries."
-cp -vp /usr/bin/crictl-latest /usr/bin/crictl
-/usr/bin/crictl --version
+echo "k8s-worker-containerd: cri-tools: Installink symlink to /usr/bin/crictl-latest as /usr/local/bin/crictl"
+rm -f /usr/local/bin/crictl
+ln -s /usr/bin/crictl-latest /usr/local/bin/crictl
+/usr/local/bin/crictl --version
 
 exit 0

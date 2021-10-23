@@ -7,8 +7,9 @@ Standards-Version: 3.9.6
 Homepage: https://containerd.io/
 
 Package: k8s-worker-containerd
-Provides: containerd, runc, podman, conman, golang-github-containers-image, golang-github-containers-common, cri-tools
-Conflicts: containerd, runc, podman, conman, golang-github-containers-image, golang-github-containers-common
+Provides: golang-cfssl, containerd, runc, podman, conman, golang-github-containers-image, golang-github-containers-common, cri-tools
+Conflicts: golang-cfssl, containerd, runc, podman, conman, golang-github-containers-image, golang-github-containers-common, cri-tools
+Replaces: golang-cfssl, containerd, runc, podman, conman, golang-github-containers-image, golang-github-containers-common, cri-tools
 Description: containerd/run/cri-tools/podman/conman for k8s
  containerd/run/cri-tools/podman/conman
  Built from source. Docker-free stuff.

@@ -112,7 +112,8 @@ RUN file /pkg/*.deb
 RUN dpkg -i /pkg/*.deb
 RUN runc --version
 RUN containerd --version
-RUN crictl-latest --version
+RUN crictl-latest --version # Real bin
+RUN crictl --version # symlink in usr/local/bin
 RUN podman --version
 RUN conmon --version
 RUN cfssl version
