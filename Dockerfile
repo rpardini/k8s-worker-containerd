@@ -5,6 +5,7 @@ ARG OS_ARCH="amd64"
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update
+RUN apt-get -y dist-upgrade
 RUN apt-get -y install git bash wget curl build-essential devscripts debhelper libseccomp-dev libapparmor-dev libassuan-dev libbtrfs-dev libc6-dev libdevmapper-dev libglib2.0-dev libgpgme-dev libgpg-error-dev libprotobuf-dev libprotobuf-c-dev libseccomp-dev libselinux1-dev libsystemd-dev pkg-config
 SHELL ["/bin/bash", "-e", "-c"]
 RUN which go || apt-get -y install golang-go
@@ -16,7 +17,7 @@ RUN which go || apt-get -y install golang-go
 FROM build as runc
 WORKDIR /src
 ARG RUNC_VERSION="v1.0.2"
-RUN git clone --single-branch --branch=${RUNC_VERSION} https://github.com/opencontainers/runc /src/runc
+RUN git clone --depth=1 --single-branch --branch=${RUNC_VERSION} https://github.com/opencontainers/runc /src/runc
 WORKDIR /src/runc
 RUN make
 
@@ -24,7 +25,7 @@ RUN make
 FROM build as conmon
 WORKDIR /src
 ARG CONMON_VERSION="v2.0.30"
-RUN git clone --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
+RUN git clone --depth=1 --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
 WORKDIR /src/conmon
 RUN make
 
@@ -32,7 +33,7 @@ RUN make
 FROM build as podman
 WORKDIR /src
 ARG PODMAN_VERSION="v3.4.1"
-RUN git clone --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
+RUN git clone --depth=1 --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
 WORKDIR /src/podman
 RUN make BUILDTAGS="selinux seccomp systemd"
 

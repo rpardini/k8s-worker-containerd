@@ -23,8 +23,8 @@ jobs:
     strategy:
       fail-fast: false # let other jobs try to complete if one fails
       matrix:
-        arch: [ 'amd64' ]
-        distro: [ 'ubuntu:hirsute', 'golang:1.16-bullseye' ]
+        arch: [ 'amd64', 'arm64' ]
+        distro: [ 'ubuntu:impish', 'ubuntu:hirsute', 'golang:1.16-bullseye', 'golang:1.16-buster'   ]
     steps:
 
       - name: Checkout
@@ -52,6 +52,7 @@ jobs:
           file: ./Dockerfile
           platforms: linux/${{ matrix.arch }}
           load: true
+          pull: true # bring in updated versions of preexisting GH images
           push: false
           tags: k8s-worker-containerd:${{ matrix.arch }}
           cache-from: type=local,src=/tmp/.buildx-cache
