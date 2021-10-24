@@ -23,8 +23,9 @@ jobs:
     strategy:
       fail-fast: false # let other jobs try to complete if one fails
       matrix:
-        arch: [ 'amd64', 'arm64' ]
-        distro: [ 'ubuntu:impish', 'ubuntu:hirsute', 'golang:1.16-bullseye', 'golang:1.16-buster'   ]
+        arch: [ 'amd64' ] #, 'arm64' ]
+        distro: [ 'ubuntu:impish', 'ubuntu:hirsute', 'golang:1.16-bullseye', 'debian:sid' ]
+        # FIXME: if you know of an updated multiarch Ubuntu Focal image with 1.16 golang please PR
     steps:
 
       - name: Checkout
@@ -56,7 +57,7 @@ jobs:
           push: false
           tags: k8s-worker-containerd:${{ matrix.arch }}
           cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new #,mode=max
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           build-args: |
             PACKAGE_VERSION=${{needs.prepare.outputs.created}}
             BASE_IMAGE=${{ matrix.distro }}
@@ -91,7 +92,8 @@ jobs:
           fi
 
   release:
-    needs: [ prepare, build ]
+    needs: [ prepare, build ] # depend on the previous jobs...
+    if: "${{ always() }}" # ... but run even if (some of) them failed.
     runs-on: ubuntu-latest
     steps:
       # Download the built artifacts from GH artifacts.  
