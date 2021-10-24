@@ -1,15 +1,14 @@
-FROM ubuntu:hirsute as build
-# Note: after hirsute, dpkg defaults to zstd compression, which can't be read by Debian dpkg
+ARG BASE_IMAGE="ubuntu:hirsute"
+FROM ${BASE_IMAGE} as build
 
 ARG OS_ARCH="amd64"
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update
-RUN apt-get -y install golang-go git wget curl build-essential devscripts debhelper libseccomp-dev
-RUN apt-get -y install libapparmor-dev libassuan-dev libbtrfs-dev libc6-dev libdevmapper-dev libglib2.0-dev libgpgme-dev libgpg-error-dev libprotobuf-dev libprotobuf-c-dev libseccomp-dev libselinux1-dev libsystemd-dev pkg-config
+RUN apt-get -y install git bash wget curl build-essential devscripts debhelper libseccomp-dev libapparmor-dev libassuan-dev libbtrfs-dev libc6-dev libdevmapper-dev libglib2.0-dev libgpgme-dev libgpg-error-dev libprotobuf-dev libprotobuf-c-dev libseccomp-dev libselinux1-dev libsystemd-dev pkg-config
+SHELL ["/bin/bash", "-e", "-c"]
+RUN which go || apt-get -y install golang-go
 
-
-SHELL ["/usr/bin/bash", "-e", "-c"]
 
 # See https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/79a3f79b27bd28f82f071bb877a266c2e62ee506/docs/09-bootstrapping-kubernetes-workers.md#download-and-install-worker-binaries
 
@@ -134,9 +133,9 @@ RUN dpkg -L k8s-worker-containerd
 
 # Now prepare the real output: a tarball of /out, and the .deb for this arch.
 WORKDIR /artifacts
-RUN cp -v /pkg/*.deb k8s-worker-containerd_${OS_ARCH}.deb
+RUN cp -v /pkg/*.deb k8s-worker-containerd_${OS_ARCH}_$(lsb_release -c -s).deb
 WORKDIR /out
-RUN tar czvf /artifacts/k8s-worker-containerd_${OS_ARCH}.tar.gz *
+RUN tar czvf /artifacts/k8s-worker-containerd_${OS_ARCH}_$(lsb_release -c -s).tar.gz *
 
 # Final stage is just alpine so we can start a fake container just to get at its contents using docker in GHA
 FROM alpine:3.14.2
