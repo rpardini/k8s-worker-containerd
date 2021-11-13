@@ -24,7 +24,7 @@ jobs:
       fail-fast: false # let other jobs try to complete if one fails
       matrix:
         arch: [ 'amd64' , 'arm64' ]
-        distro: [ 'ubuntu:impish', 'ubuntu:hirsute', 'golang:1.16-bullseye', 'debian:sid' ]
+        distro: [ 'ubuntu:jammy', 'ubuntu:impish', 'ubuntu:hirsute', 'golang:1.16-bullseye', 'debian:sid' ]
         # FIXME: if you know of an updated multiarch Ubuntu Focal image with 1.16 golang please PR
     steps:
 
