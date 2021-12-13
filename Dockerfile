@@ -16,7 +16,7 @@ RUN which go || apt-get -y install golang-go
 # Build runc from source
 FROM build as runc
 WORKDIR /src
-ARG RUNC_VERSION="v1.0.2"
+ARG RUNC_VERSION="v1.0.3"
 RUN git clone --depth=1 --single-branch --branch=${RUNC_VERSION} https://github.com/opencontainers/runc /src/runc
 WORKDIR /src/runc
 RUN make
@@ -24,7 +24,7 @@ RUN make
 # Build conmon from source
 FROM build as conmon
 WORKDIR /src
-ARG CONMON_VERSION="v2.0.30"
+ARG CONMON_VERSION="v2.0.31"
 RUN git clone --depth=1 --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
 WORKDIR /src/conmon
 RUN make
@@ -32,7 +32,7 @@ RUN make
 # Build podman from source.
 FROM build as podman
 WORKDIR /src
-ARG PODMAN_VERSION="v3.4.2"
+ARG PODMAN_VERSION="v3.4.4"
 RUN git clone --depth=1 --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
 WORKDIR /src/podman
 RUN make BUILDTAGS="selinux seccomp systemd"
@@ -64,7 +64,7 @@ RUN make
 # Build nerdctl from source 
 FROM build as nerdctl
 WORKDIR /src
-ARG NERDCTL_VERSION="v0.13.0"
+ARG NERDCTL_VERSION="v0.14.0"
 RUN git clone --depth=1 --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
 WORKDIR /src/nerdctl
 RUN make
