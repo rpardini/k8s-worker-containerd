@@ -40,7 +40,7 @@ RUN make BUILDTAGS="selinux seccomp systemd"
 # Build containerd from source
 FROM build as containerd
 WORKDIR /src
-ARG CONTAINERD_VERSION="v1.5.8"
+ARG CONTAINERD_VERSION="v1.5.9"
 RUN git clone --depth=1 --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
 WORKDIR /src/containerd
 RUN BUILDTAGS=no_btrfs make
@@ -64,7 +64,7 @@ RUN make
 # Build nerdctl from source 
 FROM build as nerdctl
 WORKDIR /src
-ARG NERDCTL_VERSION="v0.14.0"
+ARG NERDCTL_VERSION="v0.15.0"
 RUN git clone --depth=1 --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
 WORKDIR /src/nerdctl
 RUN make
