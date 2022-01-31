@@ -16,7 +16,7 @@ RUN which go || apt-get -y install golang-go
 # Build runc from source
 FROM build as runc
 WORKDIR /src
-ARG RUNC_VERSION="v1.0.3"
+ARG RUNC_VERSION="v1.1.0"
 RUN git clone --depth=1 --single-branch --branch=${RUNC_VERSION} https://github.com/opencontainers/runc /src/runc
 WORKDIR /src/runc
 RUN make
@@ -24,7 +24,7 @@ RUN make
 # Build conmon from source
 FROM build as conmon
 WORKDIR /src
-ARG CONMON_VERSION="v2.0.32"
+ARG CONMON_VERSION="v2.1.0"
 RUN git clone --depth=1 --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
 WORKDIR /src/conmon
 RUN make
@@ -48,7 +48,7 @@ RUN BUILDTAGS=no_btrfs make
 # Build cri-tools from source
 FROM build as cri-tools
 WORKDIR /src
-ARG CRI_TOOLS_VERSION="v1.22.0"
+ARG CRI_TOOLS_VERSION="v1.23.0"
 RUN git clone --depth=1 --single-branch --branch=${CRI_TOOLS_VERSION} https://github.com/kubernetes-sigs/cri-tools /src/cri-tools
 WORKDIR /src/cri-tools
 RUN make
