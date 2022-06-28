@@ -139,6 +139,6 @@ WORKDIR /out
 RUN tar czvf /artifacts/k8s-worker-containerd_${OS_ARCH}_$(lsb_release -c -s).tar.gz *
 
 # Final stage is just alpine so we can start a fake container just to get at its contents using docker in GHA
-FROM alpine:3.14.2
+FROM alpine:3
 COPY --from=packager /artifacts/* /out/
 
