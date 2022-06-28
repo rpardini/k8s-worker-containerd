@@ -16,7 +16,7 @@ RUN which go || apt-get -y install golang-go
 # Build runc from source
 FROM build as runc
 WORKDIR /src
-ARG RUNC_VERSION="v1.1.1"
+ARG RUNC_VERSION="v1.1.3"
 RUN git clone --depth=1 --single-branch --branch=${RUNC_VERSION} https://github.com/opencontainers/runc /src/runc
 WORKDIR /src/runc
 RUN make
@@ -24,7 +24,7 @@ RUN make
 # Build conmon from source
 FROM build as conmon
 WORKDIR /src
-ARG CONMON_VERSION="v2.1.0"
+ARG CONMON_VERSION="v2.1.2"
 RUN git clone --depth=1 --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
 WORKDIR /src/conmon
 RUN make
@@ -32,7 +32,7 @@ RUN make
 # Build podman from source.
 FROM build as podman
 WORKDIR /src
-ARG PODMAN_VERSION="v4.0.2"
+ARG PODMAN_VERSION="v4.1.1"
 RUN git clone --depth=1 --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
 WORKDIR /src/podman
 RUN make BUILDTAGS="selinux seccomp systemd"
@@ -40,7 +40,7 @@ RUN make BUILDTAGS="selinux seccomp systemd"
 # Build containerd from source
 FROM build as containerd
 WORKDIR /src
-ARG CONTAINERD_VERSION="v1.6.2"
+ARG CONTAINERD_VERSION="v1.6.6"
 RUN git clone --depth=1 --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
 WORKDIR /src/containerd
 RUN BUILDTAGS=no_btrfs make
@@ -48,7 +48,7 @@ RUN BUILDTAGS=no_btrfs make
 # Build cri-tools from source
 FROM build as cri-tools
 WORKDIR /src
-ARG CRI_TOOLS_VERSION="v1.23.0"
+ARG CRI_TOOLS_VERSION="v1.24.2"
 RUN git clone --depth=1 --single-branch --branch=${CRI_TOOLS_VERSION} https://github.com/kubernetes-sigs/cri-tools /src/cri-tools
 WORKDIR /src/cri-tools
 RUN make
@@ -64,7 +64,7 @@ RUN make
 # Build nerdctl from source 
 FROM build as nerdctl
 WORKDIR /src
-ARG NERDCTL_VERSION="v0.18.0"
+ARG NERDCTL_VERSION="v0.21.0"
 RUN git clone --depth=1 --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
 WORKDIR /src/nerdctl
 RUN make
