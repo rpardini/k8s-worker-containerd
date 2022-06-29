@@ -9,6 +9,7 @@ RUN apt-get -y dist-upgrade
 RUN apt-get -y install git bash wget curl build-essential devscripts debhelper libseccomp-dev libapparmor-dev libassuan-dev libbtrfs-dev libc6-dev libdevmapper-dev libglib2.0-dev libgpgme-dev libgpg-error-dev libprotobuf-dev libprotobuf-c-dev libseccomp-dev libselinux1-dev libsystemd-dev pkg-config
 SHELL ["/bin/bash", "-e", "-c"]
 RUN which go || apt-get -y install golang-go
+RUN go version
 
 
 # See https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/79a3f79b27bd28f82f071bb877a266c2e62ee506/docs/09-bootstrapping-kubernetes-workers.md#download-and-install-worker-binaries
