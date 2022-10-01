@@ -24,9 +24,9 @@ jobs:
       fail-fast: false # let other jobs try to complete if one fails
       matrix:
         arch: [ 'amd64' , 'arm64' ]
-        distro: [ 'ubuntu:jammy', 'ubuntu:impish', 'golang:1.18-bullseye', 'debian:sid' ]
+        distro: [ 'ubuntu:jammy', 'golang:1.18-bullseye', 'debian:sid' ]
         # 'ubuntu:hirsute' -> hirsute is old and only has go 1.16 (out, bye)
-        # 'ubuntu:impish' -> has 1.17 by default (left in while it still builds)
+        # 'ubuntu:impish' -> has 1.17 by default (left in while it still builds) - does not build anymore, repo is offline
         # 'ubuntu:jammy' -> has go1.18.1 by default (ok)
         # 'focal' is completely outdated (out, bye)
         # golang is at 1.18...
