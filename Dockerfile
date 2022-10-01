@@ -1,4 +1,4 @@
-ARG BASE_IMAGE="ubuntu:hirsute"
+ARG BASE_IMAGE="ubuntu:jammy"
 FROM ${BASE_IMAGE} as build
 
 ARG OS_ARCH="amd64"
@@ -10,7 +10,6 @@ RUN apt-get -y install git bash wget curl build-essential devscripts debhelper l
 SHELL ["/bin/bash", "-e", "-c"]
 RUN which go || apt-get -y install golang-go
 RUN go version
-
 
 # See https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/79a3f79b27bd28f82f071bb877a266c2e62ee506/docs/09-bootstrapping-kubernetes-workers.md#download-and-install-worker-binaries
 
@@ -132,6 +131,8 @@ RUN cfssl version
 RUN cfssljson --version
 RUN nerdctl --version
 RUN dpkg -L k8s-worker-containerd
+
+RUN lsb_release -a
 
 # Now prepare the real output: a tarball of /out, and the .deb for this arch.
 WORKDIR /artifacts
