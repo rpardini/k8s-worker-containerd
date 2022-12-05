@@ -24,7 +24,7 @@ RUN make
 # Build conmon from source
 FROM build as conmon
 WORKDIR /src
-ARG CONMON_VERSION="v2.1.4"
+ARG CONMON_VERSION="v2.1.5"
 RUN git clone --depth=1 --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
 WORKDIR /src/conmon
 RUN make
@@ -32,7 +32,7 @@ RUN make
 # Build podman from source.
 FROM build as podman
 WORKDIR /src
-ARG PODMAN_VERSION="v4.2.1"
+ARG PODMAN_VERSION="v4.3.1"
 RUN git clone --depth=1 --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
 WORKDIR /src/podman
 RUN make BUILDTAGS="selinux seccomp systemd"
@@ -40,7 +40,7 @@ RUN make BUILDTAGS="selinux seccomp systemd"
 # Build containerd from source
 FROM build as containerd
 WORKDIR /src
-ARG CONTAINERD_VERSION="v1.6.8"
+ARG CONTAINERD_VERSION="v1.6.10"
 RUN git clone --depth=1 --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
 WORKDIR /src/containerd
 RUN BUILDTAGS=no_btrfs make
@@ -56,7 +56,7 @@ RUN make
 # Build cfssl from source 
 FROM build as cfssl
 WORKDIR /src
-ARG CFSSL_VERSION="v1.6.2"
+ARG CFSSL_VERSION="v1.6.3"
 RUN git clone --depth=1 --single-branch --branch=${CFSSL_VERSION} https://github.com/cloudflare/cfssl /src/cfssl
 WORKDIR /src/cfssl
 RUN make
@@ -64,7 +64,7 @@ RUN make
 # Build nerdctl from source 
 FROM build as nerdctl
 WORKDIR /src
-ARG NERDCTL_VERSION="v0.23.0"
+ARG NERDCTL_VERSION="v1.0.0"
 RUN git clone --depth=1 --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
 WORKDIR /src/nerdctl
 RUN make
