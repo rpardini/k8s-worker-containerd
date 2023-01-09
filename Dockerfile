@@ -48,7 +48,8 @@ RUN BUILDTAGS=no_btrfs make
 # Build cri-tools from source
 FROM build as cri-tools
 WORKDIR /src
-ARG CRI_TOOLS_VERSION="v1.26.0"
+# 1.26.0 requires Go 1.19 -- hold back to 1.25.0 for now
+ARG CRI_TOOLS_VERSION="v1.25.0" 
 RUN git clone --depth=1 --single-branch --branch=${CRI_TOOLS_VERSION} https://github.com/kubernetes-sigs/cri-tools /src/cri-tools
 WORKDIR /src/cri-tools
 RUN make
