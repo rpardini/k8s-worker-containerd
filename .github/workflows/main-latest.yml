@@ -53,6 +53,7 @@ jobs:
 
       - name: Build ${{ matrix.arch }} ${{ matrix.distro }}
         uses: docker/build-push-action@v3
+        timeout-minutes: 180
         with:
           context: .
           file: ./Dockerfile
