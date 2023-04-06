@@ -1,4 +1,4 @@
-ARG BASE_IMAGE="ubuntu:jammy"
+ARG BASE_IMAGE="debian:bookworm"
 FROM ${BASE_IMAGE} as build
 
 ARG OS_ARCH="amd64"
@@ -16,7 +16,7 @@ RUN go version
 # Build runc from source
 FROM build as runc
 WORKDIR /src
-ARG RUNC_VERSION="v1.1.4"
+ARG RUNC_VERSION="v1.1.5"
 RUN git clone --depth=1 --single-branch --branch=${RUNC_VERSION} https://github.com/opencontainers/runc /src/runc
 WORKDIR /src/runc
 RUN make
@@ -24,31 +24,39 @@ RUN make
 # Build conmon from source
 FROM build as conmon
 WORKDIR /src
-ARG CONMON_VERSION="v2.1.5"
+ARG CONMON_VERSION="v2.1.7"
 RUN git clone --depth=1 --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
 WORKDIR /src/conmon
+RUN make
+
+# Build containerd from source
+FROM build as containerd
+WORKDIR /src
+ARG CONTAINERD_VERSION="v1.6.20"
+RUN git clone --depth=1 --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
+WORKDIR /src/containerd
+RUN BUILDTAGS=no_btrfs make
+
+# Build nerdctl from source 
+FROM build as nerdctl
+WORKDIR /src
+ARG NERDCTL_VERSION="v1.3.0"
+RUN git clone --depth=1 --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
+WORKDIR /src/nerdctl
 RUN make
 
 # Build podman from source.
 FROM build as podman
 WORKDIR /src
-ARG PODMAN_VERSION="v4.3.1"
+ARG PODMAN_VERSION="v4.4.4"
 RUN git clone --depth=1 --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
 WORKDIR /src/podman
 RUN make BUILDTAGS="selinux seccomp systemd"
 
-# Build containerd from source
-FROM build as containerd
-WORKDIR /src
-ARG CONTAINERD_VERSION="v1.6.15"
-RUN git clone --depth=1 --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
-WORKDIR /src/containerd
-RUN BUILDTAGS=no_btrfs make
-
 # Build cri-tools from source
 FROM build as cri-tools
 WORKDIR /src
-# 1.26.0 requires Go 1.19 -- hold back to 1.25.0 for now
+# @TODO: 1.26.0 requires Go 1.19 -- hold back to 1.25.0 for now
 ARG CRI_TOOLS_VERSION="v1.25.0" 
 RUN git clone --depth=1 --single-branch --branch=${CRI_TOOLS_VERSION} https://github.com/kubernetes-sigs/cri-tools /src/cri-tools
 WORKDIR /src/cri-tools
@@ -60,14 +68,6 @@ WORKDIR /src
 ARG CFSSL_VERSION="v1.6.3"
 RUN git clone --depth=1 --single-branch --branch=${CFSSL_VERSION} https://github.com/cloudflare/cfssl /src/cfssl
 WORKDIR /src/cfssl
-RUN make
-
-# Build nerdctl from source 
-FROM build as nerdctl
-WORKDIR /src
-ARG NERDCTL_VERSION="v1.1.0"
-RUN git clone --depth=1 --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
-WORKDIR /src/nerdctl
 RUN make
 
 # Prepare the results in /out
