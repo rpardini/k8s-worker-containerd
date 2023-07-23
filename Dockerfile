@@ -2,13 +2,17 @@ ARG BASE_IMAGE="debian:bookworm"
 FROM ${BASE_IMAGE} as build
 
 ARG OS_ARCH="amd64"
+ARG GOLANG_VERSION="1.20.6"
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update
 RUN apt-get -y dist-upgrade
 RUN apt-get -y install git bash wget curl build-essential devscripts debhelper libseccomp-dev libapparmor-dev libassuan-dev libbtrfs-dev libc6-dev libdevmapper-dev libglib2.0-dev libgpgme-dev libgpg-error-dev libprotobuf-dev libprotobuf-c-dev libseccomp-dev libselinux1-dev libsystemd-dev pkg-config
 SHELL ["/bin/bash", "-e", "-c"]
-RUN which go || apt-get -y install golang-go
+
+RUN wget --progress=dot:giga -O "/tmp/go.tgz" https://go.dev/dl/go${GOLANG_VERSION}.linux-${OS_ARCH}.tar.gz
+RUN rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tgz && rm -f /tmp/go.tgz
+RUN ln -s /usr/local/go/bin/go /usr/local/bin/go
 RUN go version
 
 # See https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/79a3f79b27bd28f82f071bb877a266c2e62ee506/docs/09-bootstrapping-kubernetes-workers.md#download-and-install-worker-binaries
@@ -16,8 +20,8 @@ RUN go version
 # Build runc from source
 FROM build as runc
 WORKDIR /src
-ARG RUNC_VERSION="v1.1.5"
-RUN git clone --depth=1 --single-branch --branch=${RUNC_VERSION} https://github.com/opencontainers/runc /src/runc
+ARG RUNC_VERSION="v1.1.8"
+RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${RUNC_VERSION} https://github.com/opencontainers/runc /src/runc
 WORKDIR /src/runc
 RUN make
 
@@ -25,48 +29,49 @@ RUN make
 FROM build as conmon
 WORKDIR /src
 ARG CONMON_VERSION="v2.1.7"
-RUN git clone --depth=1 --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
+RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
 WORKDIR /src/conmon
 RUN make
 
 # Build containerd from source
 FROM build as containerd
 WORKDIR /src
-ARG CONTAINERD_VERSION="v1.6.20"
-RUN git clone --depth=1 --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
+ARG CONTAINERD_VERSION="v1.7.2"
+RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
 WORKDIR /src/containerd
 RUN BUILDTAGS=no_btrfs make
 
 # Build nerdctl from source 
 FROM build as nerdctl
 WORKDIR /src
-ARG NERDCTL_VERSION="v1.3.0"
-RUN git clone --depth=1 --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
+ARG NERDCTL_VERSION="v1.4.0"
+RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
 WORKDIR /src/nerdctl
 RUN make
 
 # Build podman from source.
 FROM build as podman
 WORKDIR /src
-ARG PODMAN_VERSION="v4.4.4"
-RUN git clone --depth=1 --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
+ARG PODMAN_VERSION="v4.6.0"
+RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
 WORKDIR /src/podman
 RUN make BUILDTAGS="selinux seccomp systemd"
 
 # Build cri-tools from source
 FROM build as cri-tools
 WORKDIR /src
-# @TODO: 1.26.0 requires Go 1.19 -- hold back to 1.25.0 for now
-ARG CRI_TOOLS_VERSION="v1.25.0" 
-RUN git clone --depth=1 --single-branch --branch=${CRI_TOOLS_VERSION} https://github.com/kubernetes-sigs/cri-tools /src/cri-tools
+ARG CRI_TOOLS_VERSION="v1.27.1" 
+RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${CRI_TOOLS_VERSION} https://github.com/kubernetes-sigs/cri-tools /src/cri-tools
 WORKDIR /src/cri-tools
 RUN make
+RUN ls -laR /src/cri-tools/build/bin/linux/${OS_ARCH}
+
 
 # Build cfssl from source 
 FROM build as cfssl
 WORKDIR /src
-ARG CFSSL_VERSION="v1.6.3"
-RUN git clone --depth=1 --single-branch --branch=${CFSSL_VERSION} https://github.com/cloudflare/cfssl /src/cfssl
+ARG CFSSL_VERSION="v1.6.4"
+RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${CFSSL_VERSION} https://github.com/cloudflare/cfssl /src/cfssl
 WORKDIR /src/cfssl
 RUN make
 
@@ -76,8 +81,8 @@ WORKDIR /out/usr/sbin
 COPY --from=runc /src/runc/runc .
 
 WORKDIR /out/usr/bin
-COPY --from=cri-tools /src/cri-tools/build/bin/crictl crictl-latest
-COPY --from=cri-tools /src/cri-tools/build/bin/critest .
+COPY --from=cri-tools /src/cri-tools/build/bin/linux/${OS_ARCH}/crictl crictl-latest
+COPY --from=cri-tools /src/cri-tools/build/bin/linux/${OS_ARCH}/critest .
 COPY --from=containerd /src/containerd/bin/* .
 COPY --from=podman /src/podman/bin/podman .
 COPY --from=conmon /src/conmon/bin/conmon .

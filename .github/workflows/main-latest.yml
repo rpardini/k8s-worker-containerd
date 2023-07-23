@@ -24,14 +24,7 @@ jobs:
       fail-fast: false # let other jobs try to complete if one fails
       matrix:
         arch: [ 'amd64' , 'arm64' ]
-        distro: [ 'ubuntu:lunar', 'ubuntu:kinetic', 'debian:bookworm',  'ubuntu:jammy', 'golang:1-bullseye' ]
-        #distro: [ 'ubuntu:lunar', 'ubuntu:kinetic', 'ubuntu:jammy', 'golang:1-bullseye' ]
-        # 'ubuntu:hirsute' -> hirsute is old and only has go 1.16 (out, bye)
-        # 'ubuntu:impish' -> has 1.17 by default (left in while it still builds) - does not build anymore, repo is offline
-        # 'ubuntu:jammy' -> has go1.18.1 by default (ok)
-        # 'focal' is completely outdated (out, bye)
-        # golang is at 1.18...
-        # , 'debian:sid' recently started breaking, since `lsb_release -c -s` now returns `n/a` - wtf
+        distro: [ 'ubuntu:mantic', 'ubuntu:lunar', 'debian:bookworm', 'ubuntu:jammy', 'debian:bullseye', 'debian:trixie' ]
     steps:
 
       - name: Checkout
@@ -44,14 +37,6 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Cache Docker layers ${{ matrix.arch }} ${{ matrix.distro }}
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.arch }}-${{ matrix.distro }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.arch }}-${{ matrix.distro }}
-
       - name: Build ${{ matrix.arch }} ${{ matrix.distro }}
         uses: docker/build-push-action@v3
         timeout-minutes: 180
@@ -63,8 +48,8 @@ jobs:
           pull: true # bring in updated versions of preexisting GH images
           push: false
           tags: k8s-worker-containerd:${{ matrix.arch }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          cache-from: type=gha,scope=${{ matrix.arch }}_${{ matrix.distro }}
+          cache-to: type=gha,scope=${{ matrix.arch }}_${{ matrix.distro }}
           build-args: |
             PACKAGE_VERSION=${{needs.prepare.outputs.created}}
             BASE_IMAGE=${{ matrix.distro }}
@@ -85,18 +70,6 @@ jobs:
           name: tarball
           path: out/*.tar.gz
 
-      # Temp fix: https://github.com/docker/build-push-action/issues/252
-      - name: Move caches ${{ matrix.arch }} ${{ matrix.distro }}
-        run: |
-          echo "Old ${{ matrix.arch }} ${{ matrix.distro }} cache..."
-          ls -lahtR /tmp/.buildx-cache || true
-          if [[ -d /tmp/.buildx-cache-new ]]; then
-            echo "New  ${{ matrix.arch }} ${{ matrix.distro }} cache..."
-            ls -lahtR /tmp/.buildx-cache-new
-            echo "Flipping  ${{ matrix.arch }} ${{ matrix.distro }} cache..."
-            rm -rf /tmp/.buildx-cache
-            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-          fi
 
   release:
     needs: [ prepare, build ] # depend on the previous jobs...
