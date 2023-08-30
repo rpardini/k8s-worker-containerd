@@ -37,6 +37,7 @@ RUN make
 FROM build as containerd
 WORKDIR /src
 ARG CONTAINERD_VERSION="v1.7.5"
+# When changing above, also change the version in the debian/control file
 RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
 WORKDIR /src/containerd
 RUN BUILDTAGS=no_btrfs make
