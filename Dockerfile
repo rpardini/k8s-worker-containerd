@@ -2,7 +2,7 @@ ARG BASE_IMAGE="debian:bookworm"
 FROM ${BASE_IMAGE} as build
 
 ARG OS_ARCH="amd64"
-ARG GOLANG_VERSION="1.20.6"
+ARG GOLANG_VERSION="1.21.3"
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update
@@ -36,7 +36,7 @@ RUN make
 # Build containerd from source
 FROM build as containerd
 WORKDIR /src
-ARG CONTAINERD_VERSION="v1.7.5"
+ARG CONTAINERD_VERSION="v1.7.8"
 # When changing above, also change the version in the debian/control file
 RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
 WORKDIR /src/containerd
@@ -45,7 +45,7 @@ RUN BUILDTAGS=no_btrfs make
 # Build nerdctl from source 
 FROM build as nerdctl
 WORKDIR /src
-ARG NERDCTL_VERSION="v1.5.0"
+ARG NERDCTL_VERSION="v1.6.2"
 RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
 WORKDIR /src/nerdctl
 RUN make
@@ -53,7 +53,7 @@ RUN make
 # Build podman from source.
 FROM build as podman
 WORKDIR /src
-ARG PODMAN_VERSION="v4.6.2"
+ARG PODMAN_VERSION="v4.7.1"
 RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
 WORKDIR /src/podman
 RUN make BUILDTAGS="selinux seccomp systemd"
