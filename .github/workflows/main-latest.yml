@@ -16,14 +16,18 @@ jobs:
     outputs:
       created: ${{ steps.prep.outputs.created }} # refer to as ${{needs.prepare.outputs.created}}
 
+  # Setup for runner:
+  # If on thin LVM: 
+  #   THIN_POOL="thinvg" SIZE=100G LABEL=build_others MOUNT_POINT=/opt/build_others lvm_thin_ext4_prepare
+  # GH_RUNNER_USER="ghrunnerk8scontainerd" BASE_DIR="/opt/build_others" GH_OWNER_REPO="rpardini/k8s-worker-containerd" setup_github_runner
 
   build:
     needs: [ prepare ]
-    runs-on: ubuntu-latest # soon to support hosted runners for arm64
+    runs-on: ${{ matrix.arch.runner }}
     strategy:
       fail-fast: false # let other jobs try to complete if one fails
       matrix:
-        arch: [ 'amd64' , 'arm64' ]
+        arch: [ { name: 'amd64', runner: 'ubuntu-latest' } , { name: 'arm64', runner: [ "self-hosted", "ARM64" ] } ]
         distro: [ 'ubuntu:mantic', 'ubuntu:lunar', 'debian:bookworm', 'ubuntu:jammy', 'debian:bullseye', 'debian:trixie' ]
     steps:
 
@@ -37,34 +41,34 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build ${{ matrix.arch }} ${{ matrix.distro }}
+      - name: Build ${{ matrix.arch.name }} ${{ matrix.distro }}
         uses: docker/build-push-action@v3
         timeout-minutes: 180
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch.name }}
           load: true
           pull: true # bring in updated versions of preexisting GH images
           push: false
-          tags: k8s-worker-containerd:${{ matrix.arch }}
-          cache-from: type=gha,scope=${{ matrix.arch }}_${{ matrix.distro }}
-          cache-to: type=gha,scope=${{ matrix.arch }}_${{ matrix.distro }}
+          tags: k8s-worker-containerd:${{ matrix.arch.name }}
+          cache-from: type=gha,scope=${{ matrix.arch.name }}_${{ matrix.distro }}
+          cache-to: type=gha,scope=${{ matrix.arch.name }}_${{ matrix.distro }}
           build-args: |
             PACKAGE_VERSION=${{needs.prepare.outputs.created}}
             BASE_IMAGE=${{ matrix.distro }}
-            OS_ARCH=${{ matrix.arch }}
+            OS_ARCH=${{ matrix.arch.name }}
 
-      - name: Extract artifacts from docker ${{ matrix.arch }} ${{ matrix.distro }}
-        run: docker cp $(docker create --rm k8s-worker-containerd:${{ matrix.arch }}):/out ./
+      - name: Extract artifacts from docker ${{ matrix.arch.name }} ${{ matrix.distro }}
+        run: docker cp $(docker create --rm k8s-worker-containerd:${{ matrix.arch.name }}):/out ./
 
-      - name: Upload deb as artifact ${{ matrix.arch }} ${{ matrix.distro }}
+      - name: Upload deb as artifact ${{ matrix.arch.name }} ${{ matrix.distro }}
         uses: actions/upload-artifact@v3
         with:
           name: deb
           path: out/*.deb
 
-      - name: Upload tarball as artifact ${{ matrix.arch }} ${{ matrix.distro }}
+      - name: Upload tarball as artifact ${{ matrix.arch.name }} ${{ matrix.distro }}
         uses: actions/upload-artifact@v3
         with:
           name: tarball
