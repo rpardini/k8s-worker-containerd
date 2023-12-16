@@ -3,7 +3,7 @@ FROM ${BASE_IMAGE} as build
 
 ARG OS_ARCH="amd64"
 # See https://go.dev/dl/
-ARG GOLANG_VERSION="1.21.4"
+ARG GOLANG_VERSION="1.21.5"
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update
@@ -29,7 +29,7 @@ RUN make
 # Build conmon from source
 FROM build as conmon
 WORKDIR /src
-ARG CONMON_VERSION="v2.1.8"
+ARG CONMON_VERSION="v2.1.9"
 RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${CONMON_VERSION} https://github.com/containers/conmon.git /src/conmon
 WORKDIR /src/conmon
 RUN make
@@ -37,7 +37,7 @@ RUN make
 # Build containerd from source
 FROM build as containerd
 WORKDIR /src
-ARG CONTAINERD_VERSION="v1.7.10"
+ARG CONTAINERD_VERSION="v1.7.11"
 # When changing above, also change the version in the debian/control file
 RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${CONTAINERD_VERSION} https://github.com/containerd/containerd /src/containerd
 WORKDIR /src/containerd
@@ -46,7 +46,7 @@ RUN BUILDTAGS=no_btrfs make
 # Build nerdctl from source 
 FROM build as nerdctl
 WORKDIR /src
-ARG NERDCTL_VERSION="v1.7.1"
+ARG NERDCTL_VERSION="v1.7.2"
 RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${NERDCTL_VERSION} https://github.com/containerd/nerdctl /src/nerdctl
 WORKDIR /src/nerdctl
 RUN make
@@ -54,7 +54,7 @@ RUN make
 # Build podman from source.
 FROM build as podman
 WORKDIR /src
-ARG PODMAN_VERSION="v4.8.0"
+ARG PODMAN_VERSION="v4.8.2"
 RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${PODMAN_VERSION} https://github.com/containers/podman.git /src/podman
 WORKDIR /src/podman
 RUN make BUILDTAGS="selinux seccomp systemd"
@@ -62,7 +62,7 @@ RUN make BUILDTAGS="selinux seccomp systemd"
 # Build cri-tools from source
 FROM build as cri-tools
 WORKDIR /src
-ARG CRI_TOOLS_VERSION="v1.28.0" 
+ARG CRI_TOOLS_VERSION="v1.29.0" 
 RUN git -c advice.detachedHead=false clone --depth=1  --single-branch --branch=${CRI_TOOLS_VERSION} https://github.com/kubernetes-sigs/cri-tools /src/cri-tools
 WORKDIR /src/cri-tools
 RUN make
