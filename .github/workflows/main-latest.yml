@@ -28,7 +28,7 @@ jobs:
       fail-fast: false # let other jobs try to complete if one fails
       matrix:
         arch: [ { name: 'amd64', runner: 'ubuntu-latest' } , { name: 'arm64', runner: [ "self-hosted", "ARM64" ] } ]
-        distro: [ 'ubuntu:mantic', 'ubuntu:lunar', 'debian:bookworm', 'ubuntu:jammy', 'debian:bullseye', 'debian:trixie' ]
+        distro: [ 'ubuntu:mantic', 'ubuntu:noble', 'debian:bookworm', 'ubuntu:jammy', 'debian:bullseye', 'debian:trixie' ]
     steps:
 
       - name: Checkout
